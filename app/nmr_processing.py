@@ -44,6 +44,7 @@ DEFAULT_REVERSE = True
 DEFAULT_DIGITAL_FILTER = True
 DEFAULT_BASELINE = False
 DEFAULT_BASELINE_WD = 20
+DEFAULT_PEAK_WINDOW_PPM = 0.1
 
 
 def unzip_if_needed(input_path: Path) -> Path:
@@ -216,39 +217,51 @@ def plot_combined_spectra(
     results,
     molecule_name,
     output_path,
+    peak_window_ppm: float = DEFAULT_PEAK_WINDOW_PPM,
 ):
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    peak_center = float(np.median([r.peak_ppm for r in results]))
+    left_ppm = peak_center + peak_window_ppm
+    right_ppm = peak_center - peak_window_ppm
 
     plt.figure(figsize=(12, 8))
 
     for i, spectrum in enumerate(spectra):
         ppm = ppm_axes[i]
 
-        y = spectrum.copy()
-        max_abs = np.max(np.abs(y))
+        mask = (ppm >= right_ppm) & (ppm <= left_ppm)
 
+        if not np.any(mask):
+            ppm_plot = ppm
+            y = spectrum.copy()
+        else:
+            ppm_plot = ppm[mask]
+            y = spectrum[mask].copy()
+
+        max_abs = np.max(np.abs(y))
         if max_abs != 0:
             y = y / max_abs
 
         offset = i * 1.3
 
-        plt.plot(ppm, y + offset, linewidth=1.0)
+        plt.plot(ppm_plot, y + offset, linewidth=1.0)
         plt.axvline(results[i].peak_ppm, linestyle="--", linewidth=0.8)
 
         plt.text(
-            ppm[0],
+            left_ppm,
             offset + 0.75,
             f"RAW{i + 1} integral = {results[i].integral:.3f}",
             fontsize=9,
         )
 
-    plt.title(f"{molecule_name} pseudo-2D spectra")
+    plt.title(f"{molecule_name} pseudo-2D spectra, ±{peak_window_ppm} ppm around main peak")
     plt.xlabel("ppm")
-    plt.ylabel("Normalised intensity + offset")
-    plt.gca().invert_xaxis()
+    plt.ylabel("Normalised intensity")
+    plt.xlim(left_ppm, right_ppm)
     plt.tight_layout()
-    plt.savefig(output_path, dpi=200, bbox_inches="tight")
+    plt.savefig(output_path, dpi=300, bbox_inches="tight")
     plt.close()
 
 
@@ -329,6 +342,7 @@ def process_pseudo2d_logp(
         results=results,
         molecule_name=molecule_name,
         output_path=figure_path,
+        peak_window_ppm=DEFAULT_PEAK_WINDOW_PPM,
     )
 
     if not figure_path.exists():
