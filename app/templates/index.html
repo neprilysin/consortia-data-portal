@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Consortia Data Portal</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link rel="stylesheet" href="/static/style.css">
+
+    <style>
+        .upload-form {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .upload-form label {
+            font-weight: 600;
+            font-size: 14px;
+            color: #1f2937;
+        }
+
+        .upload-form input,
+        .upload-form select,
+        .upload-form textarea {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid #d1d5db;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .upload-form textarea {
+            resize: vertical;
+        }
+
+        .upload-form .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .upload-form small {
+            color: #6b7280;
+            font-size: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .upload-form .two-col {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page-shell">
+
+        <header class="site-header">
+            <div class="logo-row">
+
+                <div class="logo-card">
+                    <img
+                        src="/static/logos/edinburgh.png"
+                        alt="The University of Edinburgh"
+                        style="max-height:42px; width:auto;"
+                    >
+                </div>
+
+                <div class="logo-card">
+                    <img
+                        src="/static/logos/strathclyde.png"
+                        alt="The University of Strathclyde"
+                        style="max-height:42px; width:auto;"
+                    >
+                </div>
+
+                <div class="logo-card">
+                    <img
+                        src="/static/logos/crh-cruk.png"
+                        alt="CRH-CRUK"
+                        style="max-height:42px; width:auto;"
+                    >
+                </div>
+
+            </div>
+
+            <nav class="nav">
+                <a href="/" class="active">Home</a>
+                <a href="#upload">Upload</a>
+                <a href="#how">How It Works</a>
+                <a href="#security">Security</a>
+                <a href="/dashboard" class="dashboard-btn">Dashboard</a>
+            </nav>
+        </header>
+
+        <main>
+
+            <section class="hero">
+
+                <div class="hero-inner">
+
+                    <div>
+                        <span class="badge">Consortia Data Portal</span>
+
+                        <h1>
+                            Secure.<br>
+                            Analyse.<br>
+                            Certify.
+                        </h1>
+
+                        <p>
+                            A secure portal for consortium members to submit raw NMR data,
+                            run standardised analysis, and receive certified PDF reports.
+                        </p>
+
+                        <div class="hero-actions">
+                            <a class="btn btn-primary" href="#upload">
+                                ⬆ Upload Data
+                            </a>
+
+                            <a class="btn btn-secondary" href="/dashboard">
+                                ▣ View Dashboard
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="workflow-card" id="how">
+
+                        <h2>From Raw Data to Certified Report</h2>
+
+                        <div class="workflow-steps">
+
+                            <div class="step">
+                                <div class="step-number one">1</div>
+                                <div class="step-icon">☁️</div>
+                                <h3>Upload</h3>
+                                <p>Submit your raw data securely through the portal.</p>
+                            </div>
+
+                            <div class="step">
+                                <div class="step-number two">2</div>
+                                <div class="step-icon">📊</div>
+                                <h3>Analyse</h3>
+                                <p>The consortium analyses your data using validated pipelines.</p>
+                            </div>
+
+                            <div class="step">
+                                <div class="step-number three">3</div>
+                                <div class="step-icon">🏅</div>
+                                <h3>Certify</h3>
+                                <p>Receive a certified report with a unique certificate ID.</p>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+            <section class="content">
+
+                <div class="partner-strip">
+
+                    <h2>In collaboration with</h2>
+
+                    <div class="partner-logos">
+
+                        <div class="partner-logo">
+                            <div class="logo-card">
+                                <img
+                                    src="/static/logos/edinburgh.png"
+                                    alt="The University of Edinburgh"
+                                    style="max-height:42px; width:auto;"
+                                >
+                            </div>
+                        </div>
+
+                        <div class="partner-logo">
+                            <div class="logo-card">
+                                <img
+                                    src="/static/logos/strathclyde.png"
+                                    alt="University of Strathclyde"
+                                    style="max-height:42px; width:auto;"
+                                >
+                            </div>
+                        </div>
+
+                        <div class="partner-logo">
+                            <div class="logo-card">
+                                <img
+                                    src="/static/logos/crh-cruk.png"
+                                    alt="CRH-CRUK"
+                                    style="max-height:42px; width:auto;"
+                                >
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="features" id="security">
+
+                    <article class="feature-card">
+                        <div class="feature-icon">🛡️</div>
+                        <div>
+                            <h3>Secure Uploads</h3>
+                            <p>
+                                Your data is stored locally in this MVP and can later be moved
+                                to encrypted cloud storage.
+                            </p>
+                        </div>
+                    </article>
+
+                    <article class="feature-card">
+                        <div class="feature-icon">🧪</div>
+                        <div>
+                            <h3>Standardised Analysis</h3>
+                            <p>
+                                Use reproducible analysis pipelines so every submission follows
+                                the same methods.
+                            </p>
+                        </div>
+                    </article>
+
+                    <article class="feature-card">
+                        <div class="feature-icon">📄</div>
+                        <div>
+                            <h3>Certified Reports</h3>
+                            <p>
+                                Generate PDF reports with dataset hash, certificate ID,
+                                spectra, and analysis summary.
+                            </p>
+                        </div>
+                    </article>
+
+                </div>
+
+                <section class="upload-panel" id="upload">
+
+                    <div class="upload-copy">
+
+                        <h2>Start a submission</h2>
+
+                        <p>
+                            Upload a Bruker ZIP dataset and define the associated
+                            processing metadata.
+                        </p>
+
+                        <div class="login-card">
+
+                            <strong>Current demo user:</strong> {{ email }}
+
+                            <form action="/login" method="post">
+                                <input
+                                    name="email"
+                                    value="user@example.com"
+                                    aria-label="Demo email"
+                                >
+
+                                <button class="btn btn-primary" type="submit">
+                                    Switch user
+                                </button>
+                            </form>
+
+                            {% if is_admin %}
+                                <p>You are logged in as admin.</p>
+                            {% else %}
+                                <p>
+                                    Tip: use <strong>admin@example.com</strong>
+                                    to access admin review actions.
+                                </p>
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+                    <div class="upload-box">
+
+                        <form
+                            class="upload-form"
+                            action="/upload"
+                            method="post"
+                            enctype="multipart/form-data"
+                        >
+
+                            <h2>Upload raw NMR data</h2>
+
+                            <p>
+                                Submit a Bruker ZIP file together with the metadata
+                                required for automated analysis.
+                            </p>
+
+                            <label>Lab name</label>
+                            <input
+                                type="text"
+                                name="lab_name"
+                                placeholder="e.g. CRH Edinburgh"
+                                required
+                            >
+
+                            <label>Project name</label>
+                            <input
+                                type="text"
+                                name="project_name"
+                                placeholder="e.g. logP consortium study"
+                            >
+
+                            <label>Molecule / compound name</label>
+                            <input
+                                type="text"
+                                name="molecule_name"
+                                placeholder="e.g. TFT-2"
+                                required
+                            >
+
+                            <div class="two-col">
+
+                                <div>
+                                    <label>Experiment type</label>
+
+                                    <select name="experiment_type" required>
+                                        <option value="logP">logP</option>
+                                        <option value="STD">STD</option>
+                                        <option value="Binding">Binding</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label>Instrument</label>
+
+                                    <input
+                                        type="text"
+                                        name="instrument"
+                                        placeholder="e.g. Bruker 600 MHz"
+                                    >
+                                </div>
+
+                            </div>
+
+                            <div class="two-col">
+
+                                <div>
+                                    <label>P0 phase</label>
+
+                                    <input
+                                        type="number"
+                                        name="p0_phase"
+                                        value="74.0"
+                                        step="0.01"
+                                    >
+                                </div>
+
+                                <div>
+                                    <label>P1 phase</label>
+
+                                    <input
+                                        type="number"
+                                        name="p1_phase"
+                                        value="0.0"
+                                        step="0.01"
+                                    >
+                                </div>
+
+                            </div>
+
+                            <label>Notes</label>
+
+                            <textarea
+                                name="notes"
+                                rows="4"
+                                placeholder="Optional notes about sample, solvent, concentration, or processing."
+                            ></textarea>
+
+                            <label>Raw Bruker ZIP file</label>
+
+                            <input
+                                type="file"
+                                name="file"
+                                accept=".zip"
+                                required
+                            >
+
+                            <small>
+                                Recommended upload format: Bruker experiment folder compressed as ZIP.
+                            </small>
+
+                            <button class="btn btn-primary" type="submit">
+                                Upload Data
+                            </button>
+
+                        </form>
+
+                    </div>
+
+                </section>
+
+                <section class="cta">
+
+                    <div>
+                        <h2>Trusted. Secure. Collaborative.</h2>
+
+                        <p>
+                            Designed for research consortia that need transparent
+                            analysis and certified reporting.
+                        </p>
+                    </div>
+
+                    <a class="btn btn-secondary" href="/dashboard">
+                        Open Dashboard →
+                    </a>
+
+                </section>
+
+            </section>
+
+        </main>
+
+        <footer class="site-footer">
+
+            <div>
+                <strong>Consortia Data Portal</strong><br>
+                <small>
+                    Secure data. Trusted analysis. Certified results.
+                </small>
+            </div>
+
+            <div class="footer-links">
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms of Use</a>
+                <a href="#">Data Policy</a>
+            </div>
+
+        </footer>
+
+    </div>
+</body>
+</html>

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard - Consortia Data Portal</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f6f7f9; color: #222; }
+        .card { background: white; padding: 24px; border-radius: 14px; box-shadow: 0 8px 30px rgba(0,0,0,.06); overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 18px; min-width: 1100px; }
+        th, td { padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: left; font-size: 13px; vertical-align: top; }
+        th { background: #f9fafb; font-size: 12px; text-transform: uppercase; letter-spacing: .03em; }
+        button { cursor: pointer; border: 0; border-radius: 8px; background: #1f2937; color: white; padding: 9px 12px; }
+        a { color: #1f2937; font-weight: bold; }
+        .hash { font-family: monospace; font-size: 11px; }
+        .muted { color: #6b7280; }
+        .status { font-weight: bold; }
+        .actions { display: flex; flex-direction: column; gap: 8px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Dashboard</h1>
+        <p>Logged in as {{ email }}</p>
+        <p><a href="/">Back to upload page</a></p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>User</th>
+                    <th>Lab</th>
+                    <th>Project</th>
+                    <th>Molecule</th>
+                    <th>Experiment</th>
+                    <th>Phase</th>
+                    <th>File</th>
+                    <th>Status</th>
+                    <th>Certificate</th>
+                    <th>Dataset hash</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for s in submissions %}
+                <tr>
+                    <td>{{ s.id }}</td>
+
+                    <td>{{ s.user_email }}</td>
+
+                    <td>
+                        {{ s.lab_name or "-" }}
+                        {% if s.instrument %}
+                            <br><span class="muted">{{ s.instrument }}</span>
+                        {% endif %}
+                    </td>
+
+                    <td>{{ s.project_name or "-" }}</td>
+
+                    <td>{{ s.molecule_name or "-" }}</td>
+
+                    <td>{{ s.experiment_type or "-" }}</td>
+
+                    <td>
+                        P0: {{ "%.2f"|format(s.p0_phase or 0) }}<br>
+                        P1: {{ "%.2f"|format(s.p1_phase or 0) }}
+                    </td>
+
+                    <td>
+                        {{ s.original_filename }}
+                        {% if s.notes %}
+                            <br><span class="muted">Notes: {{ s.notes[:60] }}{% if s.notes|length > 60 %}...{% endif %}</span>
+                        {% endif %}
+                    </td>
+
+                    <td class="status">{{ s.status }}</td>
+
+                    <td>{{ s.certificate_id or "-" }}</td>
+
+                    <td class="hash">{{ s.file_hash[:18] }}...</td>
+
+                    <td>
+                        <div class="actions">
+                            {% if is_admin and s.status != "Report Ready" %}
+                                <form action="/admin/submissions/{{ s.id }}/analyse" method="post">
+                                    <button type="submit">Analyse & certify</button>
+                                </form>
+                            {% endif %}
+
+                            {% if s.report_filename %}
+                                <a href="/reports/{{ s.id }}">Download report</a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% if not submissions %}
+            <p>No submissions yet.</p>
+        {% endif %}
+    </div>
+</body>
+</html>
