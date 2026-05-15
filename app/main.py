@@ -15,7 +15,7 @@ from .models import Submission
 from .security import get_current_email, is_admin
 from .analysis import analyse_file
 from .reporting import generate_report
-from .supabase_store import save_consortia_record
+from .supabase_store import save_consortia_record, upload_file_to_bucket
 
 Base.metadata.create_all(bind=engine)
 
@@ -86,6 +86,14 @@ def upload_file(
 
     file_hash = sha256_file(stored_path)
 
+    supabase_upload_path = f"{email}/{stored_name}"
+
+    upload_file_to_bucket(
+        bucket_name="uploads",
+        local_path=stored_path,
+        storage_path=supabase_upload_path,
+    )
+
     submission = Submission(
         user_email=email,
         lab_name=safe_text(lab_name),
@@ -113,7 +121,7 @@ def upload_file(
         molecule=safe_text(molecule_name),
         experiment=safe_text(experiment_type),
         phase=f"p0={p0_phase}, p1={p1_phase}",
-        file_url=str(stored_path),
+        file_url=supabase_upload_path,
         status="Uploaded",
         certificate_url=None,
         dataset_hash=file_hash,
@@ -198,6 +206,14 @@ def analyse_submission(
         notes=submission.notes or "",
         p0_phase=submission.p0_phase,
         p1_phase=submission.p1_phase,
+    )
+
+    supabase_report_path = f"{submission.user_email}/{report_filename}"
+
+    upload_file_to_bucket(
+        bucket_name="reports",
+        local_path=report_path,
+        storage_path=supabase_report_path,
     )
 
     submission.analysis_summary = summary

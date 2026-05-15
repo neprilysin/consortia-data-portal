@@ -1,4 +1,6 @@
 import os
+from pathlib import Path
+
 from dotenv import load_dotenv
 from supabase import create_client
 
@@ -14,6 +16,21 @@ if not SUPABASE_KEY:
     raise RuntimeError("Missing SUPABASE_SERVICE_ROLE_KEY environment variable")
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+
+def upload_file_to_bucket(
+    bucket_name: str,
+    local_path: Path,
+    storage_path: str,
+):
+    with open(local_path, "rb") as f:
+        supabase.storage.from_(bucket_name).upload(
+            path=storage_path,
+            file=f,
+            file_options={"upsert": "true"},
+        )
+
+    return storage_path
 
 
 def save_consortia_record(
@@ -41,5 +58,11 @@ def save_consortia_record(
         "dataset_hash": dataset_hash,
     }
 
-    response = supabase.table("consortia_records").insert(record).execute()
+    response = (
+        supabase
+        .table("consortia_records")
+        .insert(record)
+        .execute()
+    )
+
     return response.data
