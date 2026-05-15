@@ -15,6 +15,7 @@ from .models import Submission
 from .security import get_current_email, is_admin
 from .analysis import analyse_file
 from .reporting import generate_report
+from .supabase_store import save_consortia_record
 
 Base.metadata.create_all(bind=engine)
 
@@ -104,6 +105,19 @@ def upload_file(
 
     db.add(submission)
     db.commit()
+
+    save_consortia_record(
+        user_name=email,
+        lab=safe_text(lab_name),
+        project=safe_text(project_name),
+        molecule=safe_text(molecule_name),
+        experiment=safe_text(experiment_type),
+        phase=f"p0={p0_phase}, p1={p1_phase}",
+        file_url=str(stored_path),
+        status="Uploaded",
+        certificate_url=None,
+        dataset_hash=file_hash,
+    )
 
     return RedirectResponse("/dashboard", status_code=303)
 

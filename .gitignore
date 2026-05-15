@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 consortia_portal.db
 storage/
+.env
