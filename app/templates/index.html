@@ -89,10 +89,14 @@
 
             <nav class="nav">
                 <a href="/" class="active">Home</a>
-                <a href="#upload">Upload</a>
                 <a href="#how">How It Works</a>
                 <a href="#security">Security</a>
-                <a href="/dashboard" class="dashboard-btn">Dashboard</a>
+                {% if user %}
+                    <a href="/dashboard" class="dashboard-btn">Dashboard</a>
+                {% else %}
+                    <a href="/login">Login</a>
+                    <a href="/register" class="dashboard-btn">Register</a>
+                {% endif %}
             </nav>
         </header>
 
@@ -117,13 +121,18 @@
                         </p>
 
                         <div class="hero-actions">
-                            <a class="btn btn-primary" href="#upload">
-                                ⬆ Upload Data
-                            </a>
-
-                            <a class="btn btn-secondary" href="/dashboard">
-                                ▣ View Dashboard
-                            </a>
+                            {% if user %}
+                                <a class="btn btn-primary" href="/dashboard">
+                                    ▣ View Dashboard
+                                </a>
+                            {% else %}
+                                <a class="btn btn-primary" href="/login">
+                                    ⬆ Start Submission
+                                </a>
+                                <a class="btn btn-secondary" href="/register">
+                                    Register now
+                                </a>
+                            {% endif %}
                         </div>
                     </div>
 
@@ -246,196 +255,23 @@
 
                     <div class="upload-copy">
 
-                        <h2>Start a submission</h2>
+                        <h2>Get started with the portal</h2>
 
                         <p>
-                            Upload a Bruker ZIP dataset and define the associated
-                            processing metadata.
+                            This is the public landing page. To begin a submission or
+                            manage approvals, please use the dedicated pages below.
                         </p>
 
                         <div class="login-card">
                             {% if user %}
-                                <p>
-                                    <strong>Signed in as</strong><br>
-                                    {{ user.first_name }} {{ user.last_name }}<br>
-                                    <small>{{ user.email }}</small>
-                                </p>
-
-                                <form action="/logout" method="post">
-                                    <button class="btn btn-secondary" type="submit">Log out</button>
-                                </form>
-
-                                {% if is_admin %}
-                                    <p>
-                                        Admin access granted. You have <strong>{{ pending_count }}</strong> pending registration(s).
-                                    </p>
-                                    <p><a href="/dashboard">Go to admin dashboard</a> to approve users and review submissions.</p>
-                                {% else %}
-                                    <p>Account status: <strong>{{ user.status|capitalize }}</strong></p>
-                                    {% if user.status == "pending" %}
-                                        <p>Your registration is under review by the administrator.</p>
-                                    {% elif user.status == "rejected" %}
-                                        <p>Your registration was rejected. Please <a href="/register">update your details</a>.</p>
-                                    {% elif user.status == "approved" %}
-                                        <p>Your account is approved. You may upload data below.</p>
-                                    {% endif %}
-                                {% endif %}
+                                <a class="btn btn-primary" href="/dashboard">Open Dashboard</a>
                             {% else %}
-                                <p>Sign in with your registered email or create a new account.</p>
-
-                                <form action="/login" method="post">
-                                    <label>Email</label>
-                                    <input type="email" name="email" required placeholder="name@institution.edu">
-                                    <label>Password</label>
-                                    <input type="password" name="password" required placeholder="Enter your password">
-                                    <button class="btn btn-primary" type="submit">Log in</button>
-                                </form>
-
+                                <a class="btn btn-primary" href="/login">Login</a>
                                 <a class="btn btn-secondary" href="/register">Register</a>
-
-                                <p>
-                                    Tip: sign in as <strong>{{ admin_email }}</strong> for admin approval access.
-                                </p>
                             {% endif %}
                         </div>
 
                     </div>
-
-                    {% if user and user.status == "approved" and user.policy_accepted == "true" %}
-                    <div class="upload-box">
-
-                        <form
-                            class="upload-form"
-                            action="/upload"
-                            method="post"
-                            enctype="multipart/form-data"
-                        >
-
-                            <h2>Upload raw NMR data</h2>
-
-                            <p>
-                                Submit a Bruker ZIP file together with the metadata
-                                required for automated analysis.
-                            </p>
-
-                            <label>Lab name</label>
-                            <input
-                                type="text"
-                                name="lab_name"
-                                placeholder="e.g. CRH Edinburgh"
-                                required
-                            >
-
-                            <label>Project name</label>
-                            <input
-                                type="text"
-                                name="project_name"
-                                placeholder="e.g. logP consortium study"
-                            >
-
-                            <label>Molecule / compound name</label>
-                            <input
-                                type="text"
-                                name="molecule_name"
-                                placeholder="e.g. TFT-2"
-                                required
-                            >
-
-                            <div class="two-col">
-
-                                <div>
-                                    <label>Experiment type</label>
-
-                                    <select name="experiment_type" required>
-                                        <option value="logP">logP</option>
-                                        <option value="STD">STD</option>
-                                        <option value="Binding">Binding</option>
-                                        <option value="Other">Other</option>
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label>Instrument</label>
-
-                                    <input
-                                        type="text"
-                                        name="instrument"
-                                        placeholder="e.g. Bruker 600 MHz"
-                                    >
-                                </div>
-
-                            </div>
-
-                            <div class="two-col">
-
-                                <div>
-                                    <label>P0 phase</label>
-
-                                    <input
-                                        type="number"
-                                        name="p0_phase"
-                                        value="74.0"
-                                        step="0.01"
-                                    >
-                                </div>
-
-                                <div>
-                                    <label>P1 phase</label>
-
-                                    <input
-                                        type="number"
-                                        name="p1_phase"
-                                        value="0.0"
-                                        step="0.01"
-                                    >
-                                </div>
-
-                            </div>
-
-                            <label>Notes</label>
-
-                            <textarea
-                                name="notes"
-                                rows="4"
-                                placeholder="Optional notes about sample, solvent, concentration, or processing."
-                            ></textarea>
-
-                            <label>Raw Bruker ZIP file</label>
-
-                            <input
-                                type="file"
-                                name="file"
-                                accept=".zip"
-                                required
-                            >
-
-                            <small>
-                                Recommended upload format: Bruker experiment folder compressed as ZIP.
-                            </small>
-
-                            <button class="btn btn-primary" type="submit">
-                                Upload Data
-                            </button>
-
-                        </form>
-
-                    </div>
-                    {% else %}
-                    <div class="upload-box">
-                        <h2>Upload raw NMR data</h2>
-
-                        {% if not user %}
-                            <p>Please register or log in before uploading data.</p>
-                            <a class="btn btn-primary" href="/register">Register now</a>
-                        {% elif user.status == "pending" %}
-                            <p>Your registration is under review. You will be able to upload data after admin approval.</p>
-                        {% elif user.status == "rejected" %}
-                            <p>Your registration was rejected. Please update your details or contact the administrator.</p>
-                        {% else %}
-                            <p>Your account is not approved to upload data. Please contact the administrator.</p>
-                        {% endif %}
-                    </div>
-                    {% endif %}
 
                 </section>
 
@@ -450,9 +286,11 @@
                         </p>
                     </div>
 
-                    <a class="btn btn-secondary" href="/dashboard">
-                        Open Dashboard →
-                    </a>
+                    {% if user %}
+                        <a class="btn btn-secondary" href="/dashboard">
+                            Open Dashboard →
+                        </a>
+                    {% endif %}
 
                 </section>
 
