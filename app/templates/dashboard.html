@@ -22,6 +22,58 @@
         <p>Logged in as {{ email }}</p>
         <p><a href="/">Back to upload page</a></p>
 
+        {% if is_admin %}
+            <div class="card" style="margin-bottom: 24px;">
+                <h2>Pending registration approvals</h2>
+                {% if pending_users %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Department</th>
+                                <th>Organization</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for u in pending_users %}
+                                <tr>
+                                    <td>{{ u.id }}</td>
+                                    <td>{{ u.first_name }} {{ u.last_name }}</td>
+                                    <td>{{ u.email }}</td>
+                                    <td>{{ u.department or '-' }}</td>
+                                    <td>{{ u.organization or '-' }}</td>
+                                    <td>{{ u.status|capitalize }}</td>
+                                    <td>
+                                        <div class="actions">
+                                            <form action="/admin/users/{{ u.id }}/approve" method="post">
+                                                <button type="submit">Approve</button>
+                                            </form>
+                                            <form action="/admin/users/{{ u.id }}/reject" method="post">
+                                                <button type="submit">Reject</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>No pending registrations.</p>
+                {% endif %}
+            </div>
+        {% else %}
+            {% if user %}
+                <p>Account status: <strong>{{ user.status|capitalize }}</strong></p>
+                {% if user.status == 'pending' %}
+                    <p>Your registration is under review.</p>
+                {% endif %}
+            {% endif %}
+        {% endif %}
+
         <table>
             <thead>
                 <tr>

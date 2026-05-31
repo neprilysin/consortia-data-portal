@@ -254,34 +254,54 @@
                         </p>
 
                         <div class="login-card">
-
-                            <strong>Current demo user:</strong> {{ email }}
-
-                            <form action="/login" method="post">
-                                <input
-                                    name="email"
-                                    value="user@example.com"
-                                    aria-label="Demo email"
-                                >
-
-                                <button class="btn btn-primary" type="submit">
-                                    Switch user
-                                </button>
-                            </form>
-
-                            {% if is_admin %}
-                                <p>You are logged in as admin.</p>
-                            {% else %}
+                            {% if user %}
                                 <p>
-                                    Tip: use <strong>admin@example.com</strong>
-                                    to access admin review actions.
+                                    <strong>Signed in as</strong><br>
+                                    {{ user.first_name }} {{ user.last_name }}<br>
+                                    <small>{{ user.email }}</small>
+                                </p>
+
+                                <form action="/logout" method="post">
+                                    <button class="btn btn-secondary" type="submit">Log out</button>
+                                </form>
+
+                                {% if is_admin %}
+                                    <p>
+                                        Admin access granted. You have <strong>{{ pending_count }}</strong> pending registration(s).
+                                    </p>
+                                    <p><a href="/dashboard">Go to admin dashboard</a> to approve users and review submissions.</p>
+                                {% else %}
+                                    <p>Account status: <strong>{{ user.status|capitalize }}</strong></p>
+                                    {% if user.status == "pending" %}
+                                        <p>Your registration is under review by the administrator.</p>
+                                    {% elif user.status == "rejected" %}
+                                        <p>Your registration was rejected. Please <a href="/register">update your details</a>.</p>
+                                    {% elif user.status == "approved" %}
+                                        <p>Your account is approved. You may upload data below.</p>
+                                    {% endif %}
+                                {% endif %}
+                            {% else %}
+                                <p>Sign in with your registered email or create a new account.</p>
+
+                                <form action="/login" method="post">
+                                    <label>Email</label>
+                                    <input type="email" name="email" required placeholder="name@institution.edu">
+                                    <label>Password</label>
+                                    <input type="password" name="password" required placeholder="Enter your password">
+                                    <button class="btn btn-primary" type="submit">Log in</button>
+                                </form>
+
+                                <a class="btn btn-secondary" href="/register">Register</a>
+
+                                <p>
+                                    Tip: sign in as <strong>{{ admin_email }}</strong> for admin approval access.
                                 </p>
                             {% endif %}
-
                         </div>
 
                     </div>
 
+                    {% if user and user.status == "approved" and user.policy_accepted == "true" %}
                     <div class="upload-box">
 
                         <form
@@ -400,6 +420,22 @@
                         </form>
 
                     </div>
+                    {% else %}
+                    <div class="upload-box">
+                        <h2>Upload raw NMR data</h2>
+
+                        {% if not user %}
+                            <p>Please register or log in before uploading data.</p>
+                            <a class="btn btn-primary" href="/register">Register now</a>
+                        {% elif user.status == "pending" %}
+                            <p>Your registration is under review. You will be able to upload data after admin approval.</p>
+                        {% elif user.status == "rejected" %}
+                            <p>Your registration was rejected. Please update your details or contact the administrator.</p>
+                        {% else %}
+                            <p>Your account is not approved to upload data. Please contact the administrator.</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
 
                 </section>
 

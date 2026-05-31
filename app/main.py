@@ -2,17 +2,29 @@ import hashlib
 import shutil
 import uuid
 from datetime import datetime
+from email.utils import formataddr
 from pathlib import Path
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, UploadFile, File, Request, HTTPException, Form
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
+
+load_dotenv()
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
 from .database import Base, engine, get_db
-from .models import Submission
-from .security import get_current_email, is_admin
+from .email_utils import send_admin_notification
+from .models import Submission, User
+from .security import (
+    get_admin_email,
+    get_current_email,
+    hash_password,
+    is_admin,
+    verify_admin_password,
+    verify_password,
+)
 from .analysis import analyse_file
 from .reporting import generate_report
 from .supabase_store import save_consortia_record, upload_file_to_bucket
@@ -42,19 +54,201 @@ def safe_text(value: str | None) -> str:
     return (value or "").strip()
 
 
+def get_user_by_email(db: Session, email: str | None) -> User | None:
+    if not email:
+        return None
+    return db.query(User).filter(User.email == email.lower()).first()
+
+
 @app.get("/", response_class=HTMLResponse)
-def home(request: Request):
+def home(request: Request, db: Session = Depends(get_db)):
     email = get_current_email(request)
+    user = get_user_by_email(db, email)
+    pending_count = 0
+
+    if is_admin(email):
+        pending_count = db.query(User).filter(User.status == "pending").count()
+
     return templates.TemplateResponse(
         "index.html",
-        {"request": request, "email": email, "is_admin": is_admin(email)},
+        {
+            "request": request,
+            "email": email,
+            "user": user,
+            "is_admin": is_admin(email),
+            "admin_email": get_admin_email(),
+            "pending_count": pending_count,
+        },
+    )
+
+
+@app.get("/register", response_class=HTMLResponse)
+def show_register(request: Request):
+    return templates.TemplateResponse("register.html", {"request": request})
+
+
+@app.get("/login", response_class=HTMLResponse)
+def show_login(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
+
+
+@app.post("/register")
+def submit_register(
+    request: Request,
+    first_name: str = Form(...),
+    last_name: str = Form(...),
+    title: str = Form(""),
+    department: str = Form(""),
+    organization: str = Form(""),
+    email: str = Form(...),
+    password: str = Form(...),
+    password_confirm: str = Form(...),
+    policy_accepted: bool = Form(False),
+    db: Session = Depends(get_db),
+):
+    if not policy_accepted:
+        raise HTTPException(status_code=400, detail="You must accept the scientific data integrity policy.")
+
+    normalized_email = email.strip().lower()
+    if not normalized_email:
+        raise HTTPException(status_code=400, detail="Email is required.")
+
+    if password != password_confirm:
+        return templates.TemplateResponse(
+            "register.html",
+            {
+                "request": request,
+                "error": "Passwords do not match.",
+                "first_name": first_name,
+                "last_name": last_name,
+                "title": title,
+                "department": department,
+                "organization": organization,
+                "email": email,
+            },
+            status_code=400,
+        )
+
+    if len(password) < 8:
+        return templates.TemplateResponse(
+            "register.html",
+            {
+                "request": request,
+                "error": "Password must be at least 8 characters long.",
+                "first_name": first_name,
+                "last_name": last_name,
+                "title": title,
+                "department": department,
+                "organization": organization,
+                "email": email,
+            },
+            status_code=400,
+        )
+
+    user = get_user_by_email(db, normalized_email)
+
+    if normalized_email == get_admin_email().lower():
+        return templates.TemplateResponse(
+            "register.html",
+            {
+                "request": request,
+                "error": "Admin must log in through the admin login page.",
+                "first_name": first_name,
+                "last_name": last_name,
+                "title": title,
+                "department": department,
+                "organization": organization,
+                "email": email,
+            },
+            status_code=400,
+        )
+
+    if not user:
+        user = User(
+            first_name=safe_text(first_name),
+            last_name=safe_text(last_name),
+            title=safe_text(title),
+            department=safe_text(department),
+            organization=safe_text(organization),
+            email=normalized_email,
+            password_hash=hash_password(password),
+            policy_accepted="true",
+            approved="false",
+            status="pending",
+        )
+        db.add(user)
+    else:
+        user.first_name = safe_text(first_name)
+        user.last_name = safe_text(last_name)
+        user.title = safe_text(title)
+        user.department = safe_text(department)
+        user.organization = safe_text(organization)
+        user.policy_accepted = "true"
+        if user.status != "approved":
+            user.status = "pending"
+            user.approved = "false"
+        user.password_hash = hash_password(password)
+
+    db.commit()
+
+    send_admin_notification(user=user, admin_email=get_admin_email())
+
+    return templates.TemplateResponse(
+        "login.html",
+        {
+            "request": request,
+            "success": "Registration submitted. Your account is pending admin approval.",
+            "email": normalized_email,
+        },
     )
 
 
 @app.post("/login")
-def login(email: str = Form(...)):
+def login(request: Request, email: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
+    normalized_email = email.strip().lower()
+    if not normalized_email:
+        return templates.TemplateResponse(
+            "login.html",
+            {"request": request, "error": "Email is required."},
+            status_code=400,
+        )
+
+    if is_admin(normalized_email):
+        if not verify_admin_password(password):
+            return templates.TemplateResponse(
+                "login.html",
+                {"request": request, "error": "Invalid admin credentials."},
+                status_code=401,
+            )
+
+        redirect = RedirectResponse("/dashboard", status_code=303)
+        redirect.set_cookie("email", normalized_email, httponly=True)
+        return redirect
+
+    user = get_user_by_email(db, normalized_email)
+    if not user:
+        return templates.TemplateResponse(
+            "login.html",
+            {"request": request, "error": "No account found. Please register first."},
+            status_code=404,
+        )
+
+    if not user.password_hash or not verify_password(user.password_hash, password):
+        return templates.TemplateResponse(
+            "login.html",
+            {"request": request, "error": "Invalid email or password."},
+            status_code=401,
+        )
+
     redirect = RedirectResponse("/", status_code=303)
-    redirect.set_cookie("email", email, httponly=True)
+    redirect.set_cookie("email", normalized_email, httponly=True)
+    return redirect
+
+
+@app.post("/logout")
+def logout():
+    redirect = RedirectResponse("/", status_code=303)
+    redirect.delete_cookie("email")
     return redirect
 
 
@@ -73,6 +267,17 @@ def upload_file(
     db: Session = Depends(get_db),
 ):
     email = get_current_email(request)
+    user = get_user_by_email(db, email)
+    normalized_email = email.lower() if email else None
+
+    if not user:
+        raise HTTPException(status_code=403, detail="Please register and wait for admin approval before uploading.")
+
+    if user.status != "approved" or user.approved != "true":
+        raise HTTPException(status_code=403, detail="Your account is not approved yet.")
+
+    if user.policy_accepted != "true":
+        raise HTTPException(status_code=403, detail="You must accept the data integrity policy before uploading.")
 
     if not file.filename:
         raise HTTPException(status_code=400, detail="Missing filename")
@@ -85,8 +290,7 @@ def upload_file(
         shutil.copyfileobj(file.file, buffer)
 
     file_hash = sha256_file(stored_path)
-
-    supabase_upload_path = f"{email}/{stored_name}"
+    supabase_upload_path = f"{normalized_email}/{stored_name}"
 
     upload_file_to_bucket(
         bucket_name="uploads",
@@ -133,9 +337,11 @@ def upload_file(
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard(request: Request, db: Session = Depends(get_db)):
     email = get_current_email(request)
+    user = get_user_by_email(db, email)
 
     if is_admin(email):
         submissions = db.query(Submission).order_by(Submission.created_at.desc()).all()
+        pending_users = db.query(User).filter(User.status == "pending").order_by(User.registered_at.desc()).all()
     else:
         submissions = (
             db.query(Submission)
@@ -143,16 +349,54 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
             .order_by(Submission.created_at.desc())
             .all()
         )
+        pending_users = []
 
     return templates.TemplateResponse(
         "dashboard.html",
         {
             "request": request,
             "email": email,
+            "user": user,
             "is_admin": is_admin(email),
             "submissions": submissions,
+            "pending_users": pending_users,
         },
     )
+
+
+@app.post("/admin/users/{user_id}/approve")
+def approve_user(request: Request, user_id: int, db: Session = Depends(get_db)):
+    email = get_current_email(request)
+    if not is_admin(email):
+        raise HTTPException(status_code=403, detail="Admin only")
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.approved = "true"
+    user.status = "approved"
+    user.approved_at = datetime.utcnow()
+    db.commit()
+
+    return RedirectResponse("/dashboard", status_code=303)
+
+
+@app.post("/admin/users/{user_id}/reject")
+def reject_user(request: Request, user_id: int, db: Session = Depends(get_db)):
+    email = get_current_email(request)
+    if not is_admin(email):
+        raise HTTPException(status_code=403, detail="Admin only")
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.approved = "false"
+    user.status = "rejected"
+    db.commit()
+
+    return RedirectResponse("/dashboard", status_code=303)
 
 
 @app.post("/admin/submissions/{submission_id}/analyse")

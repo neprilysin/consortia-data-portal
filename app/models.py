@@ -34,3 +34,21 @@ class Submission(Base):
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    first_name = Column(String, nullable=False)
+    last_name = Column(String, nullable=False)
+    title = Column(String, nullable=True)
+    department = Column(String, nullable=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    organization = Column(String, nullable=True)
+    password_hash = Column(String, nullable=True)
+    policy_accepted = Column(String, nullable=False, default="false")
+    approved = Column(String, nullable=False, default="false")
+    status = Column(String, nullable=False, default="pending")
+    registered_at = Column(DateTime, default=datetime.utcnow)
+    approved_at = Column(DateTime, nullable=True)
