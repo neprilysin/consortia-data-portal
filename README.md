@@ -23,9 +23,32 @@ A starter project for a consortium-style platform where users upload raw data, a
 
 ## Run locally
 
+1. Create or activate your Conda environment:
+
+```bash
 conda activate consortia
+```
+
+2. Install dependencies:
+
+```bash
 pip install -r requirements.txt
-uvicorn app.main:app --reload
+```
+
+3. Create a `.env` file in the project root with at least:
+
+```env
+SUPABASE_URL=https://your-supabase-url
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=admin123
+```
+
+4. Start the app:
+
+```bash
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
 
 Then open:
 
@@ -35,10 +58,10 @@ http://127.0.0.1:8000
 
 ## Demo users
 
-- User: `user@example.com`
-- Admin: `admin@example.com`
+- Admin email: `admin@example.com`
+- Admin password: `admin123`
 
-No password is required in this starter version. Replace this with proper authentication before production.
+Users must register before they can upload data. New user accounts remain in `pending` status until an administrator approves them.
 
 ## Production notes
 
